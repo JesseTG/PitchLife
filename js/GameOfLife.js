@@ -285,8 +285,6 @@ function loadOffscreenImage(imgName, pixelArray) {
     // A CONSTRUCTED Image's src VARIABLE INITIATES THE IMAGE-LOADING
     // PROCESS
     var path = document.URL;
-    var indexLocation = path.indexOf("index.html");
-    path = path.substring(0, indexLocation);
     img.src = path + imgDir + imgName;
 }
 
