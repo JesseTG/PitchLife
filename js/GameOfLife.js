@@ -284,7 +284,7 @@ function loadOffscreenImage(imgName, pixelArray) {
     // JavaScript PROGRAM IS BEING USED. NOTE THAT ASSIGNING A URL TO
     // A CONSTRUCTED Image's src VARIABLE INITIATES THE IMAGE-LOADING
     // PROCESS
-    var path = document.URL;
+    var path = document.URL + "/PitchLife/";
     img.src = path + imgDir + imgName;
 }
 
