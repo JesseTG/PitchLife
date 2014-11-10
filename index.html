@@ -1,78 +1,115 @@
-<!doctype html>
+<!--
+Conway's Game of Life (Seawolf Edition)
+
+Author: Richard McKenna & Jesse Talavera-Greenberg
+        Stony Brook University
+        CSE 390
+        Advanced Programming Technique
+
+This page contains a JavaScript implementation of Conway's
+Game of Life, which is not really a game, but a simulation. The
+user may select different types of objects to put into the game
+world and may start and pause the simulation as desired. Through
+this assignment students should learn a bit about HTML5 controls, 
+JavaScript, and rendering to the canvas. Students must make the
+appropriate changes to this file and GameOfLife.js as needed
+according to the HW 1 instructions.
+-->
+<!DOCTYPE html>
 <html>
-  <head>
-    <meta charset="utf-8">
-    <meta http-equiv="X-UA-Compatible" content="chrome=1">
-    <title>Pitchlife by JesseTG</title>
-    <link rel="stylesheet" href="stylesheets/styles.css">
-    <link rel="stylesheet" href="stylesheets/pygment_trac.css">
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
-    <script src="javascripts/respond.js"></script>
-    <!--[if lt IE 9]>
-      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
-    <![endif]-->
-    <!--[if lt IE 8]>
-    <link rel="stylesheet" href="stylesheets/ie.css">
-    <![endif]-->
-    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
 
-  </head>
-  <body>
-      <div id="header">
-        <nav>
-          <li class="fork"><a href="https://github.com/JesseTG/PitchLife">View On GitHub</a></li>
-          <li class="downloads"><a href="https://github.com/JesseTG/PitchLife/zipball/master">ZIP</a></li>
-          <li class="downloads"><a href="https://github.com/JesseTG/PitchLife/tarball/master">TAR</a></li>
-          <li class="title">DOWNLOADS</li>
-        </nav>
-      </div><!-- end header -->
+<head>
+    <title>Multi-Scale Game of Life</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <!-- Page style, like colors and fonts, are specified
+        inside the GameOfLife.css style sheet.
+        -->
+    <link rel="stylesheet" type="text/css" href="./css/GameOfLife.css" />
+    <!-- The JavaScript code that actually runs the Game of Life
+        simulation is inside the GameOfLife.js JavaScript file. This
+        file does all game state updating and rendering. Note that
+        methods inside this file are referenced later in this page.
+        -->
+    <script src="./js/GameOfLife.js"></script>
+</head>
 
-    <div class="wrapper">
-
-      <section>
-        <div id="title">
-          <h1>Pitchlife</h1>
-          <p>Don&#39;t just see patterns.  Hear them.</p>
-          <hr>
-          <span class="credits left">Project maintained by <a href="https://github.com/JesseTG">JesseTG</a></span>
-          <span class="credits right">Hosted on GitHub Pages &mdash; Theme by <a href="https://twitter.com/michigangraham">mattgraham</a></span>
-        </div>
-
-        <h3>
-<a name="welcome-to-github-pages" class="anchor" href="#welcome-to-github-pages"><span class="octicon octicon-link"></span></a>Welcome to GitHub Pages.</h3>
-
-<p>This automatic page generator is the easiest way to create beautiful pages for all of your projects. Author your page content here using GitHub Flavored Markdown, select a template crafted by a designer, and publish. After your page is generated, you can check out the new branch:</p>
-
-<pre><code>$ cd your_repo_root/repo_name
-$ git fetch origin
-$ git checkout gh-pages
-</code></pre>
-
-<p>If you're using the GitHub for Mac, simply sync your repository and you'll see the new branch.</p>
-
-<h3>
-<a name="designer-templates" class="anchor" href="#designer-templates"><span class="octicon octicon-link"></span></a>Designer Templates</h3>
-
-<p>We've crafted some handsome templates for you to use. Go ahead and continue to layouts to browse through them. You can easily go back to edit your page before publishing. After publishing your page, you can revisit the page generator and switch to another theme. Your Page content will be preserved if it remained markdown format.</p>
-
-<h3>
-<a name="rather-drive-stick" class="anchor" href="#rather-drive-stick"><span class="octicon octicon-link"></span></a>Rather Drive Stick?</h3>
-
-<p>If you prefer to not use the automatic generator, push a branch named <code>gh-pages</code> to your repository to create a page manually. In addition to supporting regular HTML content, GitHub Pages support Jekyll, a simple, blog aware static site generator written by our own Tom Preston-Werner. Jekyll makes it easy to create site-wide headers and footers without having to copy them across every page. It also offers intelligent blog support and other advanced templating features.</p>
-
-<h3>
-<a name="authors-and-contributors" class="anchor" href="#authors-and-contributors"><span class="octicon octicon-link"></span></a>Authors and Contributors</h3>
-
-<p>You can <a href="https://github.com/blog/821" class="user-mention">@mention</a> a GitHub username to generate a link to their profile. The resulting <code>&lt;a&gt;</code> element will link to the contributor's GitHub Profile. For example: In 2007, Chris Wanstrath (<a href="https://github.com/defunkt" class="user-mention">@defunkt</a>), PJ Hyett (<a href="https://github.com/pjhyett" class="user-mention">@pjhyett</a>), and Tom Preston-Werner (<a href="https://github.com/mojombo" class="user-mention">@mojombo</a>) founded GitHub.</p>
-
-<h3>
-<a name="support-or-contact" class="anchor" href="#support-or-contact"><span class="octicon octicon-link"></span></a>Support or Contact</h3>
-
-<p>Having trouble with Pages? Check out the documentation at <a href="http://help.github.com/pages">http://help.github.com/pages</a> or contact <a href="mailto:support@github.com">support@github.com</a> and we’ll help you sort it out.</p>
-      </section>
-
+<body>
+    <!--
+        This is the page's header.
+        -->
+    <div id="banner">Multi-Scale Game of Life
+        <br />
     </div>
-    <!--[if !IE]><script>fixScale(document);</script><![endif]-->
-    
-  </body>
+
+    <!-- This is the toolbar with buttons for starting, pausing,
+        and resetting the simulation, as well as containing a drop
+        down list for selecting patterns to add to the game.
+        -->
+    <div id="toolbar">
+        <input id="start_button" type="button" value="Start" />
+        <input id="pause_button" type="button" value="Pause" />
+        <input id="reset_button" type="button" value="Reset" />
+
+        <!-- Here's the drop down list, it contains a reference
+            to all the image patterns to be used. -->
+        <select id="game_of_life_patterns">
+            <option value="Single.bmp">Single</option>
+            <option value="Bomb.png">Bomb</option>
+            <option value="Cross.bmp">Cross</option>
+            <option value="Exploder.png">Exploder</option>
+            <option value="Fuse.png">Fuse</option>
+            <option value="Glider.png">Glider</option>
+            <option value="GosperGliderGun1.png">Gosper Glider Gun #1</option>
+            <option value="GosperGliderGun2.png">Gosper Glider Gun #2</option>
+            <option value="GosperGliderGun3.png">Gosper Glider Gun #3</option>
+            <option value="GosperGliderGun4.png">Gosper Glider Gun #4</option>
+            <option value="LightweightSpaceship.png">Lightweight Spaceship</option>
+            <option value="MassiveBomb.png">Massive Bomb</option>
+            <option value="MassiveQuadBomb.png">Massive Quad Bomb</option>
+            <option value="Seawolf1.png">Seawolf #1</option>
+            <option value="Seawolf2.png">Seawolf #2</option>
+            <option value="Seawolf3.png">Seawolf #3</option>
+            <option value="SmallExploder.png">Small Exploder</option>
+            <option value="TenCellRow.png">Ten Cell Row</option>
+            <option value="Tumbler.png">Tumbler</option>
+        </select>
+
+        <select id="wave-type">
+            <option value="sine">Sine</option>
+            <option value="square">Square</option>
+            <option value="sawtooth">Sawtooth</option>
+            <option value="triangle">Triangle</option>
+        </select>
+
+        <!-- These buttons are for speeding up the simulation and
+            for changing the cell length of the cells, which in effect
+            zooms the view in. Note that our CPU may have trouble keeping
+            up when the cell length is 1, which means a 1-to-1 cell
+            length to pixel ratio.-->
+        <input id="dec_fps_button" type="button" value="FPS-" />
+        <input id="inc_fps_button" type="button" value="FPS+" />
+        <input id="dec_cell_length_button" type="button" value="Cell Length-" />
+        <input id="inc_cell_length_button" type="button" value="Cell Length+" />
+    </div>
+
+    <!--
+        This canvas is where we render the simulation. Note that we
+        also need to respond to mouse clicks on the canvas, which we'll
+        do via the respondToMouseClick method.
+        -->
+    <canvas id="game_of_life_canvas" width="1024" height="512">
+    </canvas>
+
+    <div class="author">by Richard McKenna &amp; Jesse Talavera-Greenberg</div>
+
+    <!--
+        This code gets executed after everything else has already
+        been loaded. Note that we are referencing methods defined
+        inside GameOfLife.js.
+        -->
+    <script>
+    initGameOfLife();
+    </script>
+</body>
+
 </html>
