@@ -53,10 +53,10 @@ var FPS_Y = 450;
 var CELL_LENGTH_X = 20;
 var CELL_LENGTH_Y = 480;
 
-var TONE_LENGTH = .1;
+var TONE_LENGTH = .5;
 
 var scales = {
-    "default": [65.41, 73.42, 82.41, 87.31, 98.00, 110.00, 123.47]
+    "default": [65.41, 69.30, 77.78, 82.41, 92.50, 103.83, 116.54]
 };
 
 var wave;
@@ -329,9 +329,18 @@ function initEventHandlers() {
     canvas.onclick = respondToMouseClick;
 
     // AND ALL THE APP'S BUTTONS
-    document.getElementById("start_button").onclick = startGameOfLife;
-    document.getElementById("pause_button").onclick = pauseGameOfLife;
     document.getElementById("reset_button").onclick = resetGameOfLife;
+
+    var playpause = document.getElementById("play_pause");
+    playpause.onclick = function() {
+        if (timer === null) {
+            startGameOfLife();
+            playpause.value = "\u25AE\u25AE";
+        } else {
+            pauseGameOfLife();
+            playpause.value = "\u25B6";
+        }
+    };
     document.getElementById("dec_fps_button").onclick = decFPS;
     document.getElementById("inc_fps_button").onclick = incFPS;
     document.getElementById("dec_cell_length_button").onclick = decCellLength;
@@ -483,7 +492,7 @@ function Grid(width, height) {
      */
     this.isValidCell = function(row, col) {
         // IS IT INSIDE THE GRID?
-        return ((row * width) + col) < this._num_cells;
+        return (col < this.width) && (((row * width) + col) < this._num_cells);
     };
 
     this.setCell = function(row, col, value) {
@@ -754,13 +763,15 @@ function playNotes(grid) {
         if (cols.length > 0) {
             for (var c = 0; c < cols.length; ++c) {
                 var bin = Math.floor(cols[c] / grid.width * 32);
-                bins[bin] += gain_row / grid.height;
+                bins[bin] += gain_row;
             }
         }
     }
 
-    for (var k = 0; k < bins.length; ++k) {
+    var limit = 0;
+    for (var k = 0; limit < 16 && k < bins.length; ++k) {
         if (bins[k] > 0) {
+            ++limit;
             var osc = context.createOscillator();
 
             var freq = currentScale[k % currentScale.length];
@@ -770,20 +781,18 @@ function playNotes(grid) {
             osc.setPeriodicWave(wave);
 
             var gain = context.createGain();
-            gain.gain.value = Math.min(bins[k], 1);
-            gain.gain.linearRampToValueAtTime(0, context.currentTime + TONE_LENGTH * .75);
+            gain.gain.value = Math.log2(bins[k]) / (bins[k]);
 
             var filter = context.createBiquadFilter();
-            filter.frequency.value = freq * 1.5;
-
-
+            filter.frequency.value = freq;
 
             osc.connect(filter);
             filter.connect(gain);
             gain.connect(context.destination);
 
-
             osc.start();
+            gain.gain.linearRampToValueAtTime(gain.gain.value, context.currentTime + TONE_LENGTH / 2);
+            gain.gain.linearRampToValueAtTime(0, context.currentTime + TONE_LENGTH);
             osc.stop(context.currentTime + TONE_LENGTH);
         }
     }

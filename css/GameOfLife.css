@@ -54,3 +54,10 @@ input, select
     font-family: monospace;
     font-weight: bold;
 }
+
+input#play_pause {
+  font-family: Arial;
+  font-weight: normal;
+  width: 2em;
+  text-align: center;
+}
