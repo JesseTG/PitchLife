@@ -33,6 +33,8 @@ var LEFT = 6;
 var RIGHT = 7;
 var CENTER = 8;
 
+
+
 // FPS CONSTANTS
 var MILLISECONDS_IN_ONE_SECOND = 1000;
 var MAX_FPS = 30;
@@ -51,9 +53,13 @@ var FPS_Y = 450;
 var CELL_LENGTH_X = 20;
 var CELL_LENGTH_Y = 480;
 
+var TONE_LENGTH = .1;
+
 var scales = {
-   "default" : [65.41, 73.42, 82.41, 87.31, 98.00, 110.00, 123.47]
+    "default": [65.41, 73.42, 82.41, 87.31, 98.00, 110.00, 123.47]
 };
+
+var wave;
 
 var currentScale = scales['default'];
 
@@ -109,6 +115,73 @@ function initGameOfLife() {
 
     try {
         context = new(window.AudioContext || window.webkitAudioContext)();
+
+        var real = new Float32Array([0, 261.2,
+            0.09739212651,
+            0.032786739527,
+            0.001225904321,
+            0.024426840957,
+            0.005598166791,
+            0.000367453175,
+            0.000774904557,
+            0.000547045919,
+            0.00075175028,
+            0.000362975393,
+            0.000125426575,
+            0.000306903942,
+            0.000141571806,
+            0.000111883553,
+            0.000185059163,
+            0.000160757309,
+            0.000246832455,
+            0.000214639664,
+            0.000100450696,
+            0.000074958519,
+            0.000068590463,
+            0.000090672429,
+            0.000082255047,
+            0.000058066823,
+            0.00006300047,
+            0.000053690592,
+            0.000046301069,
+            0.000049790923,
+            0.000043165567,
+            0.000040338032
+        ]);
+        var imag = new Float32Array([0, 261.2,
+            0.022020916788,
+            0.353879760022,
+            0.041728783158,
+            0.016857566899,
+            0.020900439633,
+            0.011706270946,
+            0.017277870526,
+            0.018527552753,
+            0.014431274941,
+            0.012933574842,
+            0.006878993083,
+            0.010609891054,
+            0.007308195516,
+            0.006497471587,
+            0.0083491277,
+            0.007794246837,
+            0.009735680393,
+            0.008991505601,
+            0.006155999112,
+            0.00531749803,
+            0.005086530636,
+            0.005848598127,
+            0.005570425525,
+            0.004679955432,
+            0.004874784042,
+            0.00450009594,
+            0.004178878133,
+            0.004333544822,
+            0.004034868033,
+            0.003900450138
+        ]);
+        // These frequency tables are built from the coefficients of the Fourier series of  x / (1 + (x + 1)^2)
+        wave = context.createPeriodicWave(real, imag);
     } catch (e) {
         alert(e + "\nThis browser doesn't support WebAudio.  Use a newer browser like Chrome or Firefox.");
     }
@@ -400,6 +473,8 @@ function Grid(width, height) {
     this.width = width;
     this.height = height;
     this.newborns = {};
+    this.cell_types = [];
+    this._num_cells = (width * height) - 1;
 
     /*
      * This function tests to see if (row, col) represents a
@@ -407,11 +482,8 @@ function Grid(width, height) {
      * returned, else false.
      */
     this.isValidCell = function(row, col) {
-        // IS IT OUTSIDE THE GRID?
-        return !((row < 0) ||
-            (col < 0) ||
-            (row >= height) ||
-            (col >= width));
+        // IS IT INSIDE THE GRID?
+        return ((row * width) + col) < this._num_cells;
     };
 
     this.setCell = function(row, col, value) {
@@ -433,6 +505,10 @@ function Grid(width, height) {
      * the 9 different types of cells it is.
      */
     this.determineCellType = function(row, col) {
+        return this.cell_types[(row * width) + col];
+    };
+
+    function _getCellType(row, col) {
         if ((row === 0) && (col === 0)) return TOP_LEFT;
         else if ((row === 0) && (col === (width - 1))) return TOP_RIGHT;
         else if ((row === (height - 1)) && (col === 0)) return BOTTOM_LEFT;
@@ -455,6 +531,7 @@ function Grid(width, height) {
         // DIFFERENT ADJACENT CELLS
         var cellType = this.determineCellType(row, col);
         var cellsToCheck = cellLookup[cellType];
+        var vals = cellsToCheck.cellValues;
         for (var counter = 0; counter < (cellsToCheck.numNeighbors * 2); counter += 2) {
             var neighborCol = col + cellsToCheck.cellValues[counter];
             var neighborRow = row + cellsToCheck.cellValues[counter + 1];
@@ -514,11 +591,14 @@ function Grid(width, height) {
 
     for (var i = 0; i < height; i++) {
         for (var j = 0; j < width; j++) {
-            this.cells[(i * width) + j] = DEAD_CELL;
-            this.next[(i * width) + j] = DEAD_CELL;
+            var index = (i * width) + j;
+            this.cells[index] = DEAD_CELL;
+            this.next[index] = DEAD_CELL;
+            this.cell_types[index] = _getCellType(i, j);
         }
     }
 }
+
 
 /*
  * This function resets the grid containing the current state of the
@@ -670,7 +750,7 @@ function playNotes(grid) {
 
     for (var r = 0; r < newborns.length; ++r) {
         var cols = newborns[r];
-        var gain_row = Math.floor(r / grid.height * 32);
+        var gain_row = Math.floor(((grid.height - r) / grid.height) * 32);
         if (cols.length > 0) {
             for (var c = 0; c < cols.length; ++c) {
                 var bin = Math.floor(cols[c] / grid.width * 32);
@@ -686,16 +766,25 @@ function playNotes(grid) {
             var freq = currentScale[k % currentScale.length];
             var factor = Math.pow(2, Math.floor(k / currentScale.length));
             osc.frequency.value = freq * factor;
-            osc.type = 'sine';
+            osc.type = 'custom';
+            osc.setPeriodicWave(wave);
 
             var gain = context.createGain();
-            gain.gain.value = 1 - bins[k];
+            gain.gain.value = Math.min(bins[k], 1);
+            gain.gain.linearRampToValueAtTime(0, context.currentTime + TONE_LENGTH * .75);
 
-            osc.connect(gain);
+            var filter = context.createBiquadFilter();
+            filter.frequency.value = freq * 1.5;
+
+
+
+            osc.connect(filter);
+            filter.connect(gain);
             gain.connect(context.destination);
 
+
             osc.start();
-            osc.stop(context.currentTime + .1);
+            osc.stop(context.currentTime + TONE_LENGTH);
         }
     }
 
